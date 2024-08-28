@@ -53,7 +53,7 @@ class LivePlot:
         self.sketch = sketch
         self.trange = trange
         self.auto_scale = auto_scale
-        self.names_sides = {}
+        self.sides= {}
     @property
     def left_axis(self) -> matplotlib.axes.Subplot:
         """Left axis of the plot."""
@@ -79,7 +79,7 @@ class LivePlot:
         """Clear the plot."""
         self.__max_updates = 0
         self.series = {}
-        self.names_sides = {}
+        self.sides = {}
         self.sketch.reset()
 
     def __add(self, name: str, side: str, *args, **kwargs) -> None:
@@ -89,7 +89,7 @@ class LivePlot:
         self.series[name] = np.full(self.__shape, np.nan)
         self.__nb_updates[name] = 0
         self.__legend[side].append(name)
-        self.names_sides[name] = side
+        self.sides[name] = side
     def add_left(self, name: str, *args, **kwargs) -> None:
         """Add a new time series to the left axis.
 
@@ -135,7 +135,7 @@ class LivePlot:
         self.__max_updates = max(self.__max_updates, self.__nb_updates[name])
         if self.auto_scale and self.__nb_updates[name] % 5 == 0:
             ylim=np.nanmin(self.series[name])-abs(0.05*np.nanmin(self.series[name])), np.nanmax(self.series[name])+abs(0.05*np.nanmax(self.series[name]))
-            if self.names_sides[name] == "left":
+            if self.sides[name] == "left":
                 self.left_axis.set_ylim(ylim)
             else:
                 self.right_axis.set_ylim(ylim)
