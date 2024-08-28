@@ -29,6 +29,7 @@ class LivePlot:
         ylim: Tuple[float, float],
         ylim_right: Optional[Tuple[float, float]] = None,
         faster: bool = True,
+        auto_scale: bool = False,
     ):
         """Initialize a new figure.
 
@@ -38,6 +39,7 @@ class LivePlot:
             ylim: Limits for left y-axis.
             ylim_right: If set, create a right y-axis with these limits.
             faster: If set, use blitting.
+            auto_scale: If set, automatically scale the y-axis. Redraws every 5 updates.
         """
         xlim = (-abs(duration), 0.0)
         trange = np.flip(-np.arange(0.0, duration, timestep))
@@ -50,7 +52,8 @@ class LivePlot:
         self.series: Dict[str, NDArray[np.float64]] = {}
         self.sketch = sketch
         self.trange = trange
-
+        self.auto_scale = auto_scale
+        self.names_sides = {}
     @property
     def left_axis(self) -> matplotlib.axes.Subplot:
         """Left axis of the plot."""
@@ -76,6 +79,7 @@ class LivePlot:
         """Clear the plot."""
         self.__max_updates = 0
         self.series = {}
+        self.names_sides = {}
         self.sketch.reset()
 
     def __add(self, name: str, side: str, *args, **kwargs) -> None:
@@ -85,7 +89,7 @@ class LivePlot:
         self.series[name] = np.full(self.__shape, np.nan)
         self.__nb_updates[name] = 0
         self.__legend[side].append(name)
-
+        self.names_sides[name] = side
     def add_left(self, name: str, *args, **kwargs) -> None:
         """Add a new time series to the left axis.
 
@@ -129,7 +133,13 @@ class LivePlot:
         self.series[name] = new_series
         self.__nb_updates[name] += 1
         self.__max_updates = max(self.__max_updates, self.__nb_updates[name])
-
+        if self.auto_scale and self.__nb_updates[name] % 5 == 0:
+            ylim=np.nanmin(self.series[name])-abs(0.05*np.nanmin(self.series[name])), np.nanmax(self.series[name])+abs(0.05*np.nanmax(self.series[name]))
+            if self.names_sides[name] == "left":
+                self.left_axis.set_ylim(ylim)
+            else:
+                self.right_axis.set_ylim(ylim)
+            self.sketch.redraw()
     def push(self, name: str, value: float) -> None:
         """Send a new value to an existing time series.
 
